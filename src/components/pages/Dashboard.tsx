@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { CssBaseline, Box } from "@mui/material";
 import AppHeader from "../common/AppHearder";
 import Sidebar from "../common/Sidebar";
 import DashboardContainer from "../dashboard/DashboardContainer";
-import FilterBar from "../dashboard/FilterBar";
+import FilterBar, { FilterBarRef } from "../dashboard/FilterBar";
 import { Category, Product } from "../../types/dashboard";
 import { fetchCategories, fetchProducts } from "../../api/dashboard";
 
@@ -15,6 +15,7 @@ const Dashboard: React.FC = () => {
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const filterBarRef = useRef<FilterBarRef>(null);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -40,16 +41,15 @@ const Dashboard: React.FC = () => {
       setTimeout(() => {
         setLoading(false)
       }, 3000);
-      setSelectedProducts(products)
-    } else {
-      setSelectedProducts(products)
     }
-
+    setSelectedProducts(products)
   }, [])
 
   const handleCategoryChange = useCallback(async (category: Category | null) => {
     setSelectedProducts([]);
     setSelectedCategory(category);
+    // Clear filter bar selections when category changes
+    filterBarRef.current?.setSelectedProductIds([]);
     if (category) {
       const productList = await fetchProducts(category.slug);
       setProducts(productList.products);
@@ -70,6 +70,17 @@ const Dashboard: React.FC = () => {
     [categories, selectedCategory, products, selectedProducts, handleCategoryChange, handleSetSelectedProducts]
   )
 
+  // Memoize dashboard container props
+  const dashboardContainerProps = useMemo(
+    () => ({
+      selectedCategory,
+      loading,
+      products: selectedProducts,
+      categories,
+    }),
+    [selectedCategory, loading, selectedProducts, categories]
+  )
+
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
@@ -79,16 +90,11 @@ const Dashboard: React.FC = () => {
 
       {/* Sidebar */}
       <Sidebar mobileOpen={mobileOpen} onClose={handleDrawerToggle}>
-        <FilterBar {...filterBarProps} />
+        <FilterBar ref={filterBarRef} {...filterBarProps} />
       </Sidebar>
 
       {/* Main Content */}
-      <DashboardContainer
-        selectedCategory={selectedCategory}
-        loading={loading}
-        products={selectedProducts}
-        categories={categories}
-      />
+      <DashboardContainer {...dashboardContainerProps} />
     </Box>
   );
 };

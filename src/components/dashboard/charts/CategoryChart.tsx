@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useMemo, useImperativeHandle, forwardRef } from 'react'
 import Highcharts from 'highcharts';
 import { HighchartsReact } from 'highcharts-react-official';
 import { Category } from '../../../types/dashboard';
@@ -9,85 +9,97 @@ interface CategoryChartProps {
     darkMode: boolean;
 }
 
-const CategoryChart: React.FC<CategoryChartProps> = ({ categories, darkMode }) => {
+export interface CategoryChartRef {
+    updateData: (categories: Category[]) => void;
+    updateTheme: (darkMode: boolean) => void;
+    getChart: () => Highcharts.Chart | undefined;
+}
+
+const CategoryChart = forwardRef<CategoryChartRef, CategoryChartProps>(({ categories, darkMode }, ref) => {
 
     const chartComponentRef = useRef<HighchartsReact.RefObject>(null);
 
-    const [options, setOptions] = useState<Highcharts.Options>({
-                chart: {
-                    type: 'pie'
+    // Memoize base chart options (without data)
+    const baseOptions = useMemo<Highcharts.Options>(() => ({
+        chart: {
+            type: 'pie'
+        },
+        title: {
+            text: 'Categories'
+        },
+        tooltip: {
+            pointFormat: ''
+        },
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                dataLabels: {
+                    enabled: false
                 },
-                title: {
-                    text: 'Categories'
-                },
-                tooltip: {
-                    pointFormat: ''
-                },
-                plotOptions: {
-                    pie: {
-                        allowPointSelect: true,
-                        cursor: 'pointer',
-                        dataLabels: {
-                            enabled: false
-                        },
-                    }
-                },
-                series: [{
-                    name: 'Category',
-                    type: 'pie',
-                    data: []
-                }]
-            });
+            }
+        },
+        series: [{
+            name: 'Category',
+            type: 'pie',
+            data: []
+        }]
+    }), []);
 
+    // Memoize chart options with data
+    const options = useMemo<Highcharts.Options>(() => ({
+        ...baseOptions,
+        series: [{
+            name: 'Category',
+            type: 'pie',
+            data: categories.length > 0 ? categories.map(c => ({
+                name: c.name,
+                y: 1
+            })) : []
+        }]
+    }), [baseOptions, categories]);
+
+    // Expose imperative methods
+    useImperativeHandle(ref, () => ({
+        updateData: (newCategories: Category[]) => {
+            const chart = chartComponentRef.current?.chart;
+            if (chart) {
+                chart.series[0].setData(
+                    newCategories.map(c => ({ name: c.name, y: 1 })),
+                    true, // redraw
+                    true, // animation
+                    true  // update points
+                );
+            }
+        },
+        updateTheme: (isDarkMode: boolean) => {
+            Highcharts.setOptions(isDarkMode ? darkTheme : lightTheme);
+            const chart = chartComponentRef.current?.chart;
+            if (chart) {
+                chart.update({
+                    chart: { backgroundColor: isDarkMode ? darkTheme.chart?.backgroundColor : lightTheme.chart?.backgroundColor }
+                });
+            }
+        },
+        getChart: () => chartComponentRef.current?.chart
+    }), []);
+
+    // Single useEffect to handle theme changes
     useEffect(() => {
         Highcharts.setOptions(darkMode ? darkTheme : lightTheme);
     }, [darkMode]);
 
-    useEffect(() => {
-        if (categories.length > 0) {
-            setOptions({
-                chart: {
-                    type: 'pie'
-                },
-                title: {
-                    text: 'Categories'
-                },
-                tooltip: {
-                    pointFormat: ''
-                },
-                plotOptions: {
-                    pie: {
-                        allowPointSelect: true,
-                        cursor: 'pointer',
-                        dataLabels: {
-                            enabled: false
-                        },
-                    }
-                },
-                series: [{
-                    name: 'Category',
-                    type: 'pie',
-                    data: categories.map(c => ({
-                        name: c.name,
-                        y: 1
-                    }))
-                }]
-            });
-        }
-    }, [categories, darkMode]);
-
 
     return (
         <div>
-            {options &&
-                <HighchartsReact
-                    key={darkMode ? "dark" : "light"}
-                    highcharts={Highcharts}
-                    options={options}
-                    ref={chartComponentRef}
-                />}
+            <HighchartsReact
+                key={darkMode ? "dark" : "light"}
+                highcharts={Highcharts}
+                options={options}
+                ref={chartComponentRef}
+            />
         </div>
     )
-}
+});
 
-export default CategoryChart
+export default React.memo(CategoryChart)

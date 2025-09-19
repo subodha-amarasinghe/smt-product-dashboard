@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import { Box, Toolbar, Typography, CircularProgress } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { Category, Product } from "../../types/dashboard";
-import CategoryChart from "./charts/CategoryChart";
+import CategoryChart, { CategoryChartRef } from "./charts/CategoryChart";
 import { useDarkMode } from "../../context/DarkModeContext";
-import ProductChart from "./charts/ProductChart";
+import ProductChart, { ProductChartRef } from "./charts/ProductChart";
 
 const Content = styled(Box)`
   flex-grow: 1;
@@ -31,7 +31,25 @@ interface DashboardContainerProps {
 const DashboardContainer: React.FC<DashboardContainerProps> = ({ selectedCategory, loading, products, categories }) => {
 
   const { darkMode } = useDarkMode();
+  const categoryChartRef = useRef<CategoryChartRef>(null);
+  const productChartRef = useRef<ProductChartRef>(null);
 
+  // Update chart themes imperatively when darkMode changes
+  useEffect(() => {
+    if (selectedCategory && products && products.length > 0) {
+      productChartRef.current?.updateTheme(darkMode);
+    } else {
+      categoryChartRef.current?.updateTheme(darkMode);
+    }
+  }, [darkMode, selectedCategory, products]);
+
+  // Memoize chart component to prevent unnecessary rerenders
+  const chartComponent = useMemo(() => {
+    if (selectedCategory && products && products.length > 0) {
+      return <ProductChart ref={productChartRef} selectedCategory={selectedCategory} products={products} darkMode={darkMode} />;
+    }
+    return <CategoryChart ref={categoryChartRef} categories={categories} darkMode={darkMode} />;
+  }, [selectedCategory, products, darkMode, categories]);
 
   return (
     <Content>
@@ -46,14 +64,11 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ selectedCategor
         </LoadingWrapper>
         :
         <Box>
-          {selectedCategory && products && products.length > 0 ?
-            <ProductChart selectedCategory={selectedCategory} products={products} darkMode={darkMode} />
-            : <CategoryChart categories={categories} darkMode={darkMode} />
-          }
+          {chartComponent}
         </Box>
       }
     </Content>
   );
 };
 
-export default DashboardContainer;
+export default React.memo(DashboardContainer);

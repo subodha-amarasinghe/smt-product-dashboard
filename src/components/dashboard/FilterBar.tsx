@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo, useImperativeHandle, forwardRef } from "react";
 import { styled } from "@mui/material/styles";
 import { Category, Product } from "../../types/dashboard";
 import { Box, Button, MenuItem, Select, Toolbar, Typography, FormControl, InputLabel, Divider, Checkbox, OutlinedInput, SelectChangeEvent } from "@mui/material";
@@ -29,28 +29,89 @@ interface FilterBarProps {
     onSelectSelectedProducts: (products: Product[], runReport: boolean) => void;
 }
 
-const FilterBar: React.FC<FilterBarProps> = ({
+export interface FilterBarRef {
+    clearFilters: () => void;
+    runReport: () => void;
+    getSelectedProductIds: () => string[];
+    setSelectedProductIds: (ids: string[]) => void;
+}
+
+const FilterBar = forwardRef<FilterBarRef, FilterBarProps>(({
     categories,
     selectedCategory,
     onChangeCategory,
     products,
     selectedProducts,
     onSelectSelectedProducts
-}) => {
+}, ref) => {
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([])
-    const handleClickClear = () => {
+    
+    // Memoize handlers to prevent unnecessary rerenders
+    const handleClickClear = useCallback(() => {
         onChangeCategory(null)
         onSelectSelectedProducts([], false)
-    }
+        setSelectedProductIds([])
+    }, [onChangeCategory, onSelectSelectedProducts])
 
-    const handleRunReport = () => {
+    const handleRunReport = useCallback(() => {
         if (selectedProductIds.length > 0) {
             const selected = products.filter(pr =>
                 selectedProductIds.includes(pr.id.toString())
             );
             onSelectSelectedProducts(selected, true);
         }
-    }
+    }, [selectedProductIds, products, onSelectSelectedProducts])
+
+    // Expose imperative methods
+    useImperativeHandle(ref, () => ({
+        clearFilters: () => {
+            onChangeCategory(null);
+            onSelectSelectedProducts([], false);
+            setSelectedProductIds([]);
+        },
+        runReport: () => {
+            if (selectedProductIds.length > 0) {
+                const selected = products.filter(pr =>
+                    selectedProductIds.includes(pr.id.toString())
+                );
+                onSelectSelectedProducts(selected, true);
+            }
+        },
+        getSelectedProductIds: () => selectedProductIds,
+        setSelectedProductIds: (ids: string[]) => setSelectedProductIds(ids)
+    }), [selectedProductIds, products, onChangeCategory, onSelectSelectedProducts]);
+
+    // Memoize category change handler
+    const handleCategoryChange = useCallback((e: SelectChangeEvent<string>) => {
+        const selected = categories.find((c) => c.slug === e.target.value);
+        if (selected) {
+            onChangeCategory(selected);
+            setSelectedProductIds([])
+            onSelectSelectedProducts(products, false);
+        }
+    }, [categories, onChangeCategory, products, onSelectSelectedProducts])
+
+    // Memoize product selection handler
+    const handleProductChange = useCallback((event: SelectChangeEvent<string | string[]>) => {
+        const {
+            target: { value },
+        } = event;
+        setSelectedProductIds(typeof value === 'string' ? value.split(',') : value)
+    }, [])
+
+    // Memoize rendered product names for display
+    const renderedProductNames = useMemo(() => {
+        const selectedIds = selectedProductIds;
+        return products
+            .filter(p => selectedIds.includes(p.id.toString()))
+            .map(p => p.title)
+            .join(", ");
+    }, [selectedProductIds, products])
+
+    // Memoize disabled state for run report button
+    const isRunReportDisabled = useMemo(() => {
+        return selectedProductIds.length < 1 || (selectedProducts.length === selectedProductIds.length);
+    }, [selectedProductIds.length, selectedProducts.length])
     return (
         <div>
             <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
@@ -70,14 +131,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                             id="category-select"
                             value={selectedCategory?.slug || ""}
                             label="Category"
-                            onChange={(e) => {
-                                const selected = categories.find((c) => c.slug === e.target.value);
-                                if (selected) {
-                                    onChangeCategory(selected);
-                                    setSelectedProductIds([])
-                                    onSelectSelectedProducts(products, false);
-                                }
-                            }}
+                            onChange={handleCategoryChange}
                         >
                             {categories.map((c) => (
                                 <MenuItem key={c.slug} value={c.slug}>
@@ -94,20 +148,9 @@ const FilterBar: React.FC<FilterBarProps> = ({
                             id="product-select"
                             multiple
                             value={selectedProductIds}
-                            onChange={(event: SelectChangeEvent<string | string[]>) => {
-                                const {
-                                    target: { value },
-                                } = event;
-                                setSelectedProductIds(typeof value === 'string' ? value.split(',') : value)
-                            }}
+                            onChange={handleProductChange}
                             input={<OutlinedInput label="Products" />}
-                            renderValue={(selected) => {
-                                const selectedIds = selected as string[];
-                                const selectedProductIds = products
-                                    .filter(p => selectedIds.includes(p.id.toString()))
-                                    .map(p => p.title);
-                                return selectedProductIds.join(", ");
-                            }}
+                            renderValue={() => renderedProductNames}
                             disabled={!selectedCategory}
                         >
                             {products.map((p) => (
@@ -123,7 +166,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                 </FilterContainer>
 
                 <Box sx={{ display: "flex" }}>
-                    <Button variant="contained" color="primary" size="large" sx={{ width: "100%" }} onClick={handleRunReport} disabled={selectedProductIds.length < 1 || (selectedProducts.length === selectedProductIds.length)}>
+                    <Button variant="contained" color="primary" size="large" sx={{ width: "100%" }} onClick={handleRunReport} disabled={isRunReportDisabled}>
                         Run Report
                     </Button>
                 </Box>
@@ -132,6 +175,6 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
         </div>
     );
-};
+});
 
-export default FilterBar;
+export default React.memo(FilterBar);
