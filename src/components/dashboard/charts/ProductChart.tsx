@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react'
+import React, { useEffect, useRef, useMemo, useImperativeHandle, forwardRef } from 'react'
 import Highcharts from 'highcharts';
 import { HighchartsReact } from 'highcharts-react-official';
 import { Category, Product } from '../../../types/dashboard';
@@ -10,28 +10,31 @@ interface ProductChartProps {
     darkMode: boolean;
 }
 
-const ProductChart: React.FC<ProductChartProps> = ({ products, darkMode, selectedCategory }) => {
+export interface ProductChartRef {
+    updateData: (products: Product[], category: Category) => void;
+    updateTheme: (darkMode: boolean) => void;
+    getChart: () => Highcharts.Chart | undefined;
+}
+
+const ProductChart = forwardRef<ProductChartRef, ProductChartProps>(({ products, darkMode, selectedCategory }, ref) => {
 
     const chartComponentRef = useRef<HighchartsReact.RefObject>(null);
 
-    // Memoize chart options to prevent unnecessary rerenders
-    const options = useMemo<Highcharts.Options>(() => ({
+    // Memoize base chart options (without data)
+    const baseOptions = useMemo<Highcharts.Options>(() => ({
         chart: {
             type: 'column'
-        },
-        title: {
-            text: `Products n ${selectedCategory.name}`,
         },
         tooltip: {
             valueSuffix: ' $'
         },
         xAxis: {
-            categories: products.length > 0 ? products.map(c => c.title) : [],
+            categories: [],
             crosshair: true,
         },
         yAxis: {
             title: {
-                text: `${selectedCategory.name}`
+                text: ''
             }
         },
         plotOptions: {
@@ -43,9 +46,55 @@ const ProductChart: React.FC<ProductChartProps> = ({ products, darkMode, selecte
         series: [{
             type: 'column',
             name: "Price",
+            data: []
+        }]
+    }), []);
+
+    // Memoize chart options with data
+    const options = useMemo<Highcharts.Options>(() => ({
+        ...baseOptions,
+        title: {
+            text: `Products n ${selectedCategory.name}`,
+        },
+        xAxis: {
+            ...baseOptions.xAxis,
+            categories: products.length > 0 ? products.map(c => c.title) : [],
+        },
+        yAxis: {
+            ...baseOptions.yAxis,
+            title: {
+                text: `${selectedCategory.name}`
+            }
+        },
+        series: [{
+            type: 'column',
+            name: "Price",
             data: products.length > 0 ? products.map(c => c.price) : []
         }]
-    }), [products, selectedCategory.name]);
+    }), [baseOptions, products, selectedCategory.name]);
+
+    // Expose imperative methods
+    useImperativeHandle(ref, () => ({
+        updateData: (newProducts: Product[], category: Category) => {
+            const chart = chartComponentRef.current?.chart;
+            if (chart) {
+                chart.setTitle({ text: `Products n ${category.name}` });
+                chart.xAxis[0].setCategories(newProducts.map(p => p.title));
+                chart.yAxis[0].setTitle({ text: category.name });
+                chart.series[0].setData(newProducts.map(p => p.price), true, true, true);
+            }
+        },
+        updateTheme: (isDarkMode: boolean) => {
+            Highcharts.setOptions(isDarkMode ? darkTheme : lightTheme);
+            const chart = chartComponentRef.current?.chart;
+            if (chart) {
+                chart.update({
+                    chart: { backgroundColor: isDarkMode ? darkTheme.chart?.backgroundColor : lightTheme.chart?.backgroundColor }
+                });
+            }
+        },
+        getChart: () => chartComponentRef.current?.chart
+    }), []);
 
     // Single useEffect to handle theme changes
     useEffect(() => {
@@ -63,6 +112,6 @@ const ProductChart: React.FC<ProductChartProps> = ({ products, darkMode, selecte
             />
         </div>
     )
-}
+});
 
 export default React.memo(ProductChart)

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useImperativeHandle, forwardRef } from "react";
 import { styled } from "@mui/material/styles";
 import { Category, Product } from "../../types/dashboard";
 import { Box, Button, MenuItem, Select, Toolbar, Typography, FormControl, InputLabel, Divider, Checkbox, OutlinedInput, SelectChangeEvent } from "@mui/material";
@@ -29,14 +29,21 @@ interface FilterBarProps {
     onSelectSelectedProducts: (products: Product[], runReport: boolean) => void;
 }
 
-const FilterBar: React.FC<FilterBarProps> = ({
+export interface FilterBarRef {
+    clearFilters: () => void;
+    runReport: () => void;
+    getSelectedProductIds: () => string[];
+    setSelectedProductIds: (ids: string[]) => void;
+}
+
+const FilterBar = forwardRef<FilterBarRef, FilterBarProps>(({
     categories,
     selectedCategory,
     onChangeCategory,
     products,
     selectedProducts,
     onSelectSelectedProducts
-}) => {
+}, ref) => {
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([])
     
     // Memoize handlers to prevent unnecessary rerenders
@@ -54,6 +61,25 @@ const FilterBar: React.FC<FilterBarProps> = ({
             onSelectSelectedProducts(selected, true);
         }
     }, [selectedProductIds, products, onSelectSelectedProducts])
+
+    // Expose imperative methods
+    useImperativeHandle(ref, () => ({
+        clearFilters: () => {
+            onChangeCategory(null);
+            onSelectSelectedProducts([], false);
+            setSelectedProductIds([]);
+        },
+        runReport: () => {
+            if (selectedProductIds.length > 0) {
+                const selected = products.filter(pr =>
+                    selectedProductIds.includes(pr.id.toString())
+                );
+                onSelectSelectedProducts(selected, true);
+            }
+        },
+        getSelectedProductIds: () => selectedProductIds,
+        setSelectedProductIds: (ids: string[]) => setSelectedProductIds(ids)
+    }), [selectedProductIds, products, onChangeCategory, onSelectSelectedProducts]);
 
     // Memoize category change handler
     const handleCategoryChange = useCallback((e: SelectChangeEvent<string>) => {
@@ -149,6 +175,6 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
         </div>
     );
-};
+});
 
 export default React.memo(FilterBar);
