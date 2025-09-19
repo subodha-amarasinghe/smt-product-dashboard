@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo, useImperativeHandle, forwardRef } from 'react'
+import React, { useRef, useMemo, useImperativeHandle, forwardRef } from 'react'
 import Highcharts from 'highcharts';
 import { HighchartsReact } from 'highcharts-react-official';
 import { Category, Product } from '../../../types/dashboard';
@@ -17,38 +17,42 @@ export interface ProductChartRef {
 }
 
 const ProductChart = forwardRef<ProductChartRef, ProductChartProps>(({ products, darkMode, selectedCategory }, ref) => {
-
     const chartComponentRef = useRef<HighchartsReact.RefObject>(null);
 
     // Memoize base chart options (without data)
-    const baseOptions = useMemo<Highcharts.Options>(() => ({
-        chart: {
-            type: 'column'
-        },
-        tooltip: {
-            valueSuffix: ' $'
-        },
-        xAxis: {
-            categories: [],
-            crosshair: true,
-        },
-        yAxis: {
-            title: {
-                text: ''
-            }
-        },
-        plotOptions: {
-            column: {
-                pointPadding: 0.2,
-                borderWidth: 0
-            }
-        },
-        series: [{
-            type: 'column',
-            name: "Price",
-            data: []
-        }]
-    }), []);
+    const baseOptions = useMemo<Highcharts.Options>(() => {
+        // Set initial theme once
+        Highcharts.setOptions(darkMode ? darkTheme : lightTheme);
+        
+        return {
+            chart: {
+                type: 'column'
+            },
+            tooltip: {
+                valueSuffix: ' $'
+            },
+            xAxis: {
+                categories: [],
+                crosshair: true,
+            },
+            yAxis: {
+                title: {
+                    text: ''
+                }
+            },
+            plotOptions: {
+                column: {
+                    pointPadding: 0.2,
+                    borderWidth: 0
+                }
+            },
+            series: [{
+                type: 'column',
+                name: "Price",
+                data: []
+            }]
+        };
+    }, [darkMode]);
 
     // Memoize chart options with data
     const options = useMemo<Highcharts.Options>(() => ({
@@ -96,10 +100,8 @@ const ProductChart = forwardRef<ProductChartRef, ProductChartProps>(({ products,
         getChart: () => chartComponentRef.current?.chart
     }), []);
 
-    // Single useEffect to handle theme changes
-    useEffect(() => {
-        Highcharts.setOptions(darkMode ? darkTheme : lightTheme);
-    }, [darkMode]);
+    // Theme is now handled imperatively via updateTheme method
+    // No useEffect needed - theme changes are managed by parent component
 
 
     return (

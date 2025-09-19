@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo, useImperativeHandle, forwardRef } from 'react'
+import React, { useRef, useMemo, useImperativeHandle, forwardRef } from 'react'
 import Highcharts from 'highcharts';
 import { HighchartsReact } from 'highcharts-react-official';
 import { Category } from '../../../types/dashboard';
@@ -20,31 +20,36 @@ const CategoryChart = forwardRef<CategoryChartRef, CategoryChartProps>(({ catego
     const chartComponentRef = useRef<HighchartsReact.RefObject>(null);
 
     // Memoize base chart options (without data)
-    const baseOptions = useMemo<Highcharts.Options>(() => ({
-        chart: {
-            type: 'pie'
-        },
-        title: {
-            text: 'Categories'
-        },
-        tooltip: {
-            pointFormat: ''
-        },
-        plotOptions: {
-            pie: {
-                allowPointSelect: true,
-                cursor: 'pointer',
-                dataLabels: {
-                    enabled: false
-                },
-            }
-        },
-        series: [{
-            name: 'Category',
-            type: 'pie',
-            data: []
-        }]
-    }), []);
+    const baseOptions = useMemo<Highcharts.Options>(() => {
+        // Set initial theme once
+        Highcharts.setOptions(darkMode ? darkTheme : lightTheme);
+        
+        return {
+            chart: {
+                type: 'pie'
+            },
+            title: {
+                text: 'Categories'
+            },
+            tooltip: {
+                pointFormat: ''
+            },
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: false
+                    },
+                }
+            },
+            series: [{
+                name: 'Category',
+                type: 'pie',
+                data: []
+            }]
+        };
+    }, [darkMode]);
 
     // Memoize chart options with data
     const options = useMemo<Highcharts.Options>(() => ({
@@ -84,10 +89,8 @@ const CategoryChart = forwardRef<CategoryChartRef, CategoryChartProps>(({ catego
         getChart: () => chartComponentRef.current?.chart
     }), []);
 
-    // Single useEffect to handle theme changes
-    useEffect(() => {
-        Highcharts.setOptions(darkMode ? darkTheme : lightTheme);
-    }, [darkMode]);
+    // Theme is now handled imperatively via updateTheme method
+    // No useEffect needed - theme changes are managed by parent component
 
 
     return (
