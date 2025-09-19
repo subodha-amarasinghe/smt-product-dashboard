@@ -23,17 +23,23 @@ const ProductChart = forwardRef<ProductChartRef, ProductChartProps>(({ products,
     const baseOptions = useMemo<Highcharts.Options>(() => {
         // Set initial theme once
         Highcharts.setOptions(darkMode ? darkTheme : lightTheme);
-        
+
         return {
             chart: {
                 type: 'column'
             },
             tooltip: {
-                valueSuffix: ' $'
+                pointFormat: 'Price: ${point.y}'
             },
             xAxis: {
                 categories: [],
                 crosshair: true,
+                labels: {
+                    rotation: -45,
+                    style: {
+                        fontSize: '11px'
+                    }
+                }
             },
             yAxis: {
                 title: {
@@ -43,7 +49,15 @@ const ProductChart = forwardRef<ProductChartRef, ProductChartProps>(({ products,
             plotOptions: {
                 column: {
                     pointPadding: 0.2,
-                    borderWidth: 0
+                    borderWidth: 0,
+                    dataLabels: {
+                        enabled: true,
+                        format: '${y}',
+                        style: {
+                            fontWeight: 'bold',
+                            textOutline: 'none'
+                        }
+                    }
                 }
             },
             series: [{
@@ -99,10 +113,6 @@ const ProductChart = forwardRef<ProductChartRef, ProductChartProps>(({ products,
         },
         getChart: () => chartComponentRef.current?.chart
     }), []);
-
-    // Theme is now handled imperatively via updateTheme method
-    // No useEffect needed - theme changes are managed by parent component
-
 
     return (
         <div>

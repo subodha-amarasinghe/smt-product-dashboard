@@ -11,7 +11,62 @@ export const lightTheme: Highcharts.Options = {
     backgroundColor: palette.background.light,
     style: { color: palette.text.light },
   },
-  legend: { itemStyle: { color: palette.text.light } },
+  legend: { 
+    itemStyle: { color: palette.text.light },
+    itemHoverStyle: { color: palette.primary.main }
+  },
+  plotOptions: {
+    pie: {
+      dataLabels: {
+        style: { 
+          color: palette.text.light,
+          textOutline: 'none',
+          fontWeight: 'bold',
+          fontSize: '12px'
+        },
+        connectorColor: palette.text.light
+      }
+    },
+    column: {
+      dataLabels: {
+        style: { 
+          color: palette.text.light,
+          textOutline: 'none',
+          fontWeight: 'bold'
+        }
+      }
+    }
+  },
+  xAxis: {
+    labels: {
+      style: { 
+        color: palette.text.light,
+        fontSize: '12px'
+      }
+    },
+    title: {
+      style: { 
+        color: palette.text.light,
+        fontSize: '14px',
+        fontWeight: 'bold'
+      }
+    }
+  },
+  yAxis: {
+    labels: {
+      style: { 
+        color: palette.text.light,
+        fontSize: '12px'
+      }
+    },
+    title: {
+      style: { 
+        color: palette.text.light,
+        fontSize: '14px',
+        fontWeight: 'bold'
+      }
+    }
+  },
   colors: [
     palette.primary.main,
     palette.secondary.main,
@@ -32,7 +87,62 @@ export const darkTheme: Highcharts.Options = {
     backgroundColor: palette.background.dark,
     style: { color: palette.text.dark },
   },
-  legend: { itemStyle: { color: palette.text.dark } },
+  legend: { 
+    itemStyle: { color: palette.text.dark },
+    itemHoverStyle: { color: palette.primary.light }
+  },
+  plotOptions: {
+    pie: {
+      dataLabels: {
+        style: { 
+          color: palette.text.dark,
+          textOutline: 'none',
+          fontWeight: 'bold',
+          fontSize: '12px'
+        },
+        connectorColor: palette.text.dark
+      }
+    },
+    column: {
+      dataLabels: {
+        style: { 
+          color: palette.text.dark,
+          textOutline: 'none',
+          fontWeight: 'bold'
+        }
+      }
+    }
+  },
+  xAxis: {
+    labels: {
+      style: { 
+        color: palette.text.dark,
+        fontSize: '12px'
+      }
+    },
+    title: {
+      style: { 
+        color: palette.text.dark,
+        fontSize: '14px',
+        fontWeight: 'bold'
+      }
+    }
+  },
+  yAxis: {
+    labels: {
+      style: { 
+        color: palette.text.dark,
+        fontSize: '12px'
+      }
+    },
+    title: {
+      style: { 
+        color: palette.text.dark,
+        fontSize: '14px',
+        fontWeight: 'bold'
+      }
+    }
+  },
   colors: [
     palette.primary.light,
     palette.secondary.light,

@@ -32,7 +32,7 @@ const CategoryChart = forwardRef<CategoryChartRef, CategoryChartProps>(({ catego
                 text: 'Categories'
             },
             tooltip: {
-                pointFormat: ''
+                pointFormat: '<b>{point.name}</b><br/>Count: {point.y}'
             },
             plotOptions: {
                 pie: {
@@ -73,7 +73,7 @@ const CategoryChart = forwardRef<CategoryChartRef, CategoryChartProps>(({ catego
                     newCategories.map(c => ({ name: c.name, y: 1 })),
                     true, // redraw
                     true, // animation
-                    true  // update points
+
                 );
             }
         },
@@ -88,10 +88,6 @@ const CategoryChart = forwardRef<CategoryChartRef, CategoryChartProps>(({ catego
         },
         getChart: () => chartComponentRef.current?.chart
     }), []);
-
-    // Theme is now handled imperatively via updateTheme method
-    // No useEffect needed - theme changes are managed by parent component
-
 
     return (
         <div>
