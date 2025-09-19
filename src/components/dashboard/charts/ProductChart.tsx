@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useMemo } from 'react'
 import Highcharts from 'highcharts';
 import { HighchartsReact } from 'highcharts-react-official';
 import { Category, Product } from '../../../types/dashboard';
@@ -14,7 +14,8 @@ const ProductChart: React.FC<ProductChartProps> = ({ products, darkMode, selecte
 
     const chartComponentRef = useRef<HighchartsReact.RefObject>(null);
 
-    const [options, setOptions] = useState<Highcharts.Options>({
+    // Memoize chart options to prevent unnecessary rerenders
+    const options = useMemo<Highcharts.Options>(() => ({
         chart: {
             type: 'column'
         },
@@ -25,7 +26,7 @@ const ProductChart: React.FC<ProductChartProps> = ({ products, darkMode, selecte
             valueSuffix: ' $'
         },
         xAxis: {
-            categories: [],
+            categories: products.length > 0 ? products.map(c => c.title) : [],
             crosshair: true,
         },
         yAxis: {
@@ -41,62 +42,27 @@ const ProductChart: React.FC<ProductChartProps> = ({ products, darkMode, selecte
         },
         series: [{
             type: 'column',
-            data: []
+            name: "Price",
+            data: products.length > 0 ? products.map(c => c.price) : []
         }]
-    });
+    }), [products, selectedCategory.name]);
 
+    // Single useEffect to handle theme changes
     useEffect(() => {
         Highcharts.setOptions(darkMode ? darkTheme : lightTheme);
     }, [darkMode]);
 
-    useEffect(() => {
-        if (products.length > 0) {
-            setOptions({
-                chart: {
-                    type: 'column'
-                },
-                title: {
-                    text: `Products n ${selectedCategory.name}`,
-                },
-                tooltip: {
-                   valueSuffix: ' $'
-                },
-                xAxis: {
-                    categories: products.map(c => c.title),
-                    crosshair: true,
-                },
-                yAxis: {
-                    title: {
-                        text: `${selectedCategory.name}`
-                    }
-                },
-                plotOptions: {
-                    column: {
-                        pointPadding: 0.2,
-                        borderWidth: 0
-                    }
-                },
-                series: [{
-                    type: 'column',
-                    name: "Price",
-                    data: products.map(c => c.price)
-                }]
-            });
-        }
-    }, [products, darkMode, selectedCategory.name]);
-
 
     return (
         <div>
-            {options &&
-                <HighchartsReact
-                    key={darkMode ? "dark" : "light"}
-                    highcharts={Highcharts}
-                    options={options}
-                    ref={chartComponentRef}
-                />}
+            <HighchartsReact
+                key={darkMode ? "dark" : "light"}
+                highcharts={Highcharts}
+                options={options}
+                ref={chartComponentRef}
+            />
         </div>
     )
 }
 
-export default ProductChart
+export default React.memo(ProductChart)

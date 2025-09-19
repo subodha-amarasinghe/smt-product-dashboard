@@ -22,4 +22,4 @@ const ThemeSwitch: React.FC = () => {
   );
 };
 
-export default ThemeSwitch;
+export default React.memo(ThemeSwitch);

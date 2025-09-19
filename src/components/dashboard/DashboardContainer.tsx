@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Box, Toolbar, Typography, CircularProgress } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { Category, Product } from "../../types/dashboard";
@@ -32,6 +32,13 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ selectedCategor
 
   const { darkMode } = useDarkMode();
 
+  // Memoize chart component to prevent unnecessary rerenders
+  const chartComponent = useMemo(() => {
+    if (selectedCategory && products && products.length > 0) {
+      return <ProductChart selectedCategory={selectedCategory} products={products} darkMode={darkMode} />;
+    }
+    return <CategoryChart categories={categories} darkMode={darkMode} />;
+  }, [selectedCategory, products, darkMode, categories]);
 
   return (
     <Content>
@@ -46,14 +53,11 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ selectedCategor
         </LoadingWrapper>
         :
         <Box>
-          {selectedCategory && products && products.length > 0 ?
-            <ProductChart selectedCategory={selectedCategory} products={products} darkMode={darkMode} />
-            : <CategoryChart categories={categories} darkMode={darkMode} />
-          }
+          {chartComponent}
         </Box>
       }
     </Content>
   );
 };
 
-export default DashboardContainer;
+export default React.memo(DashboardContainer);

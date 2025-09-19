@@ -56,4 +56,4 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title="Dashboard", onMenuClick })
     );
 };
 
-export default AppHeader;
+export default React.memo(AppHeader);

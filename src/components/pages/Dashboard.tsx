@@ -40,11 +40,8 @@ const Dashboard: React.FC = () => {
       setTimeout(() => {
         setLoading(false)
       }, 3000);
-      setSelectedProducts(products)
-    } else {
-      setSelectedProducts(products)
     }
-
+    setSelectedProducts(products)
   }, [])
 
   const handleCategoryChange = useCallback(async (category: Category | null) => {
@@ -70,6 +67,17 @@ const Dashboard: React.FC = () => {
     [categories, selectedCategory, products, selectedProducts, handleCategoryChange, handleSetSelectedProducts]
   )
 
+  // Memoize dashboard container props
+  const dashboardContainerProps = useMemo(
+    () => ({
+      selectedCategory,
+      loading,
+      products: selectedProducts,
+      categories,
+    }),
+    [selectedCategory, loading, selectedProducts, categories]
+  )
+
   return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
@@ -83,12 +91,7 @@ const Dashboard: React.FC = () => {
       </Sidebar>
 
       {/* Main Content */}
-      <DashboardContainer
-        selectedCategory={selectedCategory}
-        loading={loading}
-        products={selectedProducts}
-        categories={categories}
-      />
+      <DashboardContainer {...dashboardContainerProps} />
     </Box>
   );
 };
