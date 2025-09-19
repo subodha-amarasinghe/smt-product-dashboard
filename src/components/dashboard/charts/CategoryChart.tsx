@@ -32,7 +32,7 @@ const CategoryChart = forwardRef<CategoryChartRef, CategoryChartProps>(({ catego
                 text: 'Categories'
             },
             tooltip: {
-                pointFormat: '<b>{point.name}</b><br/>Count: {point.y}'
+                pointFormat: ' '
             },
             plotOptions: {
                 pie: {
